@@ -2,4 +2,5 @@ datasets
 langchain
 langchain-community
 langchain-core
-chromadb==0.4.15
+chromadb==0.4.0
+langchain-chroma
