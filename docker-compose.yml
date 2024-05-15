@@ -1,0 +1,141 @@
+services:
+  frontend:
+    #Container name 
+    container_name: frontend
+    
+    #Set restart to always
+    restart: always
+    
+    #Build context 
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    # Share container network FE-BE with BE
+    networks:
+      - fe-be
+
+    #Forward port 80 from localhost to port 3000 in container
+    ports:
+      - '3000:3000'
+
+    # Add volume to frontend
+    volumes:
+      - ./frontend:/app:bind
+
+    # Default working directory
+    working_dir: /app
+
+
+  backend:
+    #Container name
+    container_name: backend 
+
+    #Build context 
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    #Set restart to always
+    restart: always
+
+    #Depend on service db
+    depends_on:
+      - db
+
+    # Share container network FE-BE with FE, BE-DB with DB
+    networks:
+      - fe-be
+      - be-db 
+
+    #Environment variables
+    environment:
+      #Environment variables for Postgres
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+
+    #Forward port 3000 from localhost to port 3000 in container
+    ports:
+      - '8000:8000'
+
+    # Add volume to backend
+    volumes:
+      - ./backend:/app:bind
+
+    # Default working directory
+    working_dir: /app
+
+
+  db:
+    #Container name
+    container_name: db 
+
+    #Build context 
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+
+    #Set restart to always
+    restart: always
+
+    # Share container network BE-DB with BE, network network db-pgadmin with pgadmin
+    networks:
+      - be-db 
+      - db-pgadmin
+
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+
+    #Mount volume postgresql-data to directory at the /bitnami/postgresql path
+    volumes:
+      - postgresql-data:/bitnami/postgresql
+  
+  db-pgadmin:
+    #Container name
+    container_name: db-pgadmin 
+
+    #Build image
+    image: dpage/pgadmin4
+
+    #Set restart to always
+    restart: always
+
+    #Depend on service db
+    depends_on:
+      - db
+
+    #Share container network db-pgadmin with db
+    networks:
+      - db-pgadmin
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+    #Forward port 8888 from localhost to port 80 in container
+    ports:
+      - "8888:80"
+    
+    #Mount volume pgadmin-data to directory at the /var/lib/pgadmin path
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+    
+  
+
+networks:
+  fe-be:
+    driver: bridge
+  be-db:
+    driver: bridge
+  db-pgadmin:
+    driver: bridge
+
+volumes:
+  pgadmin-data:
+    driver: local
+  postgresql-data:
+    driver: local
