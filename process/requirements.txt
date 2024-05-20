@@ -2,5 +2,7 @@ datasets
 langchain
 langchain-community
 langchain-core
-chromadb==0.4.0
 langchain-chroma
+pymongo
+jq
+pandas
