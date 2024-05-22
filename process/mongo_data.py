@@ -38,10 +38,10 @@ loader = JSONLoader(file_path="./out.json", jq_schema='.[]', content_key="descri
 documents = loader.load()
 # print(documents[-10:])
 
-llm = Ollama(model="phi3", base_url="http://172.17.0.1:11434")
-embed_func = OllamaEmbeddings(model = 'nomic-embed-text', base_url="http://172.17.0.1:11434")
-# db = Chroma.from_documents(documents, embed_func, persist_directory="./chroma_db", collection_name="test_nomic")
-db = Chroma(collection_name='test_nomic', persist_directory="./chroma_db", embedding_function=embed_func)
+llm = Ollama(model="llama3", base_url="http://172.17.0.1:11434")
+embed_func = OllamaEmbeddings(model = 'llama3', base_url="http://172.17.0.1:11434")
+# db = Chroma.from_documents(documents, embed_func, persist_directory="./chroma_db", collection_name="test_llama3")
+db = Chroma(collection_name='test_llama3', persist_directory="./chroma_db", embedding_function=embed_func)
 retriever = db.as_retriever()
 
 # query_prompt = "List products for damaged hair"
@@ -53,12 +53,11 @@ retriever = db.as_retriever()
 # for result in results:
 #     print(result.page_content)
 
-template = """You are an e-commerce product consultant. Recommend three to five products based on this context:
-{context}. 
-List ingredients if available with their product code(s), only use data from the context.
-
-Answer the following question:
+template = """You are an e-commerce product consultant. Based on this context:
+{context}
+Recommend me the products in this question:
 {question}
+List ingredients if available with their product code(s), only use data from the context.
 """
 prompt = ChatPromptTemplate.from_template(template)
 
