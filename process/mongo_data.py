@@ -18,35 +18,47 @@ from langchain_core.output_parsers import StrOutputParser
 # data = collection.find()
 
 # df_raw = pd.DataFrame(list(data))
-# df_raw = df_raw[['description_en', 'product_name_en', 'ingredients_en']]
+# df_raw = df_raw[['description_en', 'product_name_en', 'ingredients_en', "product_code"]]
 # rc = json.loads(df_raw.to_json(orient='records'))
 
+# with open("out.json", 'w') as file:
+#     json.dump(rc, file, indent=4)  # `indent=4` for pretty-printing
+
 def metadata_func(record: dict, metadata: dict) -> dict:
-    # metadata["product_name"] = record.get("product_name_en")
+    metadata["product_name"] = record.get("product_name_en")
     if not record.get("ingredients_en"):
         metadata["ingredients"] = ""
     else:
         metadata["ingredients"] = record.get("ingredients_en")
-
-    if not record.get("description_en"):
-        metadata["description"] = ""
-    else:
-        metadata["description"] = record.get("description_en")
+    
+    metadata['product_code'] = record.get('product_code')
     return metadata
 
-loader = JSONLoader(file_path="./out.json", jq_schema='.[]', content_key = ".product_name_en", is_content_key_jq_parsable=True)
+loader = JSONLoader(file_path="./out.json", jq_schema='.[]', content_key="description_en",text_content=False, metadata_func=metadata_func)
 documents = loader.load()
-# print(documents[-3:])
+# print(documents[-10:])
 
-llm = Ollama(model="llama3", base_url="http://10.0.0.10:11434")
-embed_func = OllamaEmbeddings(model = 'llama3', base_url="http://10.0.0.10:11434")
-db = Chroma.from_documents(documents, embed_func)
+llm = Ollama(model="phi3", base_url="http://172.17.0.1:11434")
+embed_func = OllamaEmbeddings(model = 'nomic-embed-text', base_url="http://172.17.0.1:11434")
+# db = Chroma.from_documents(documents, embed_func, persist_directory="./chroma_db", collection_name="test_nomic")
+db = Chroma(collection_name='test_nomic', persist_directory="./chroma_db", embedding_function=embed_func)
 retriever = db.as_retriever()
 
-template = """Answer the question based only on the following context:
-{context}
+# query_prompt = "List products for damaged hair"
 
-Question: {question}
+# # Perform the search
+# results = db.similarity_search(query_prompt)
+
+# # Display the results
+# for result in results:
+#     print(result.page_content)
+
+template = """You are an e-commerce product consultant. Recommend three to five products based on this context:
+{context}. 
+List ingredients if available with their product code(s), only use data from the context.
+
+Answer the following question:
+{question}
 """
 prompt = ChatPromptTemplate.from_template(template)
 
